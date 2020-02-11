@@ -6,6 +6,9 @@
 #include <map>
 #include <thread>
 
+#define MAX_RECORD 1000000
+#define ITERATION 10
+
 struct MyRecord
 {
     int x, y;
@@ -49,7 +52,7 @@ SomeData write()
     cereal::BinaryOutputArchive archive(os);
 
     SomeData myData;
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < MAX_RECORD; i++)
     {
         MyRecord myRecord;
         myRecord.x = rand();
@@ -89,10 +92,12 @@ SomeData read()
 int main()
 {
     bool hasToContinue = true;
-    for (int i = 0; i < 10000; i++)
+    for (int i = 0; i < ITERATION; i++)
     {
         SomeData dataWritten = write();
         SomeData dataRed = read();
+
+        std::cout << "=== Test number " << i + 1 << " ===" <<  std::endl;
 
         if (dataWritten.data.size() != dataRed.data.size())
             std::cout << "Error: data mismatch" << std::endl;
