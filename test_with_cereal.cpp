@@ -42,19 +42,19 @@ struct SomeData
     }
 };
 
-int write()
+SomeData write()
 {
     std::cout << "=== Writing Data Start ===" << std::endl;
     std::ofstream os("out.cereal", std::ios::binary); // Create an output archive
     cereal::BinaryOutputArchive archive(os);
 
     SomeData myData;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 100; i++)
     {
         MyRecord myRecord;
         myRecord.x = rand();
         myRecord.y = rand();
-        myRecord.z = rand();
+        myRecord.z = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 10000));;
         std::cout << " Adding those elements: " <<
             myRecord.x << ", " <<
             myRecord.y << ", " <<
@@ -63,10 +63,10 @@ int write()
     }
     archive(myData); // Write the data to the archive
     std::cout << "=== Writing Data End ===" << std::endl;
-    return 0;
+    return myData;
 }
 
-int read()
+SomeData read()
 {
     std::cout << "=== Reading Data Start ===" << std::endl;
     std::ifstream is("out.cereal", std::ios::binary);
@@ -83,16 +83,52 @@ int read()
             elem.second.z << std::endl;
     }
     std::cout << "=== Reading Data End ===" << std::endl;
-    return 0;
+    return myData;
 }
 
 int main()
 {
-    for (int i = 0; i < 100; i++)
+    bool hasToContinue = true;
+    for (int i = 0; i < 10000; i++)
     {
-        write();
-        read();
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        SomeData dataWritten = write();
+        SomeData dataRed = read();
+
+        if (dataWritten.data.size() != dataRed.data.size())
+            std::cout << "Error: data mismatch" << std::endl;
+
+        for (int i = 0; i < dataWritten.data.size(); i++)
+        {
+            if (dataWritten.data.at(i).x != dataRed.data.at(i).x)
+            {
+                std::cout << "Error: data mismatch" << std::endl;
+                hasToContinue = false;
+                break;
+            }
+
+            if (dataWritten.data.at(i).y != dataRed.data.at(i).y)
+            {
+                std::cout << "Error: data mismatch" << std::endl;
+                hasToContinue = false;
+                break;
+            }
+
+            if (dataWritten.data.at(i).z != dataRed.data.at(i).z)
+            {
+                std::cout << "Error: data mismatch" << std::endl;
+                hasToContinue = false;
+                break;
+            }
+                
+        }
+
+        if (!hasToContinue)
+        {
+            std::cout << "Exit with error!" << std::endl;
+            break;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     
     return 0;
