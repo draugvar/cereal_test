@@ -1,23 +1,25 @@
 #include "cereal/types/map.hpp"
+#include "cereal/types/vector.hpp"
 #include "cereal/types/memory.hpp"
 #include "cereal/archives/binary.hpp"
 #include "cereal/cereal.hpp"
 #include <fstream>
 #include <map>
 #include <thread>
+#include <vector>
 
 #define MAX_RECORD 10000
 #define ITERATION 10
 
 struct MyRecord
 {
-    int x, y;
-    float z;
+    std::vector<unsigned char> mVector;
+    size_t mSize;
 
     template <class Archive>
     void serialize(Archive& ar)
     {
-        ar(x, y, z);
+        ar(mVector, mSize);
     }
 };
 
@@ -55,9 +57,11 @@ SomeData write()
     for (int i = 0; i < MAX_RECORD; i++)
     {
         MyRecord myRecord;
-        myRecord.x = rand();
-        myRecord.y = rand();
-        myRecord.z = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 10000));;
+        myRecord.mSize = rand() % MAX_RECORD;
+        for (int i = 0; i < myRecord.mSize; i++)
+        {
+            myRecord.mVector.push_back((unsigned char)('A' + rand() % 24));
+        }
         /* std::cout << " Adding those elements: " <<
              myRecord.x << ", " <<
              myRecord.y << ", " <<
@@ -91,6 +95,7 @@ SomeData read()
 
 int main()
 {
+    srand((unsigned)time(0));
     bool hasToContinue = true;
     for (int i = 0; i < ITERATION; i++)
     {
@@ -103,8 +108,38 @@ int main()
             std::cout << "Error: data mismatch" << std::endl;
 
         std::cout << "   Verifying data..." << std::endl;
-        for (int i = 0; i < dataWritten.data.size(); i++)
+        std::vector<unsigned char>::iterator it = dataWritten.data.at(i).mVector.begin();
+        std::vector<unsigned char>::iterator jt = dataRed.data.at(i).mVector.begin();
+
+        while (true)
         {
+            //
+            //do stuff with iterators
+            //
+            if(*it != *jt)
+            { 
+                std::cout << "Error: data mismatch" << std::endl;
+                hasToContinue = false;
+                break;
+            }
+
+            if (it != dataWritten.data.at(i).mVector.end())
+            {
+                ++it;
+            }
+            if (jt != dataRed.data.at(i).mVector.end())
+            {
+                ++jt;
+            }
+            if (it == dataWritten.data.at(i).mVector.end() && jt == dataRed.data.at(i).mVector.end())
+            {
+                break;
+            }
+        }
+
+        /*for (int i = 0; i < dataWritten.data.size(); i++)
+        {
+            for( unsigned i : std::zip(dataWritten.data.at(i).mVector))
             if (dataWritten.data.at(i).x != dataRed.data.at(i).x)
             {
                 std::cout << "Error: data mismatch" << std::endl;
@@ -126,7 +161,7 @@ int main()
                 break;
             }
 
-        }
+        }*/
 
         if (!hasToContinue)
         {
